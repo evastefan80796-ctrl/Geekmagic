@@ -1,0 +1,77 @@
+esphome:
+  name: minitv
+  friendly_name: "GeekMagic Mini-TV"
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  networks:
+    - ssid: "ES"
+      password: "892304738193562239820"
+    - ssid: "FRITZ!Box 7490"
+      password: "98121385254732577373"
+
+# Aktiviert die Internet-Zeitsynchronisation (NTP)
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: "Europe/Berlin" # Zeitzone für Deutschland
+
+logger:
+api:
+ota:
+
+# Definition des Displays und der Anschlüsse des GeekMagic Ultra
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+
+# Lädt eine saubere System-Schriftart in zwei verschiedenen Größen
+font:
+  - file: "gfps://Roboto"
+    id: font_large
+    size: 48 # Für die große Uhrzeit
+  - file: "gfps://Roboto"
+    id: font_small
+    size: 18 # Für das Datum
+
+# Farbdefinitionen für das Display
+color:
+  - id: my_blue
+    red: 0%
+    green: 60%
+    blue: 100%
+
+display:
+  - platform: st7789v
+    model: Custom
+    height: 240
+    width: 240
+    offset_height: 0
+    offset_width: 0
+    dc_pin: GPIO0
+    reset_pin: GPIO2
+    backlight_pin:
+      number: GPIO5
+      inverted: true
+    lambda: |-
+      // Hintergrund schwarz füllen
+      it.fill(Color::BLACK);
+      
+      // Überschrift
+      it.print(15, 15, id(font_small), Color::WHITE, "GeekMagic Ultra");
+      
+      // Große Uhrzeit anzeigen (Format: HH:MM)
+      // strftime liest die sntp-Uhrzeit aus und formatiert sie
+      it.strftime(20, 60, id(font_large), id(my_blue), "%H:%M", id(sntp_time).now());
+      
+      // Datum darunter anzeigen (Format: DD.MM.YYYY)
+      it.strftime(20, 140, id(font_small), Color::WHITE, "%d.%m.%Y", id(sntp_time).now());
+      
+      // Status-Hinweis am unteren Rand
+      if (id(sntp_time).now().is_valid()) {
+        it.print(15, 210, id(font_small), Color::GREEN, "WLAN & Zeit: OK");
+      } else {
+        it.print(15, 210, id(font_small), Color::RED, "Suche Zeit...");
+      }
